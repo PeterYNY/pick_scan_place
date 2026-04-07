@@ -1,6 +1,5 @@
 # Pick-Scan-Place: ROS 2 Robotic Manipulation System
 
-## MAI605 — Robotic Systems (ROS2) | Course Project I
 
 A complete ROS 2-based robotic manipulation pipeline implementing an industrial-style pick-scan-place workflow. The Panda robot picks an object from a fixed station, moves it to a scanning pose, decodes its QR code, and places it in a designated bin based on the encoded data.
 
@@ -105,6 +104,3 @@ pick_scan_place/
 ├── setup.py
 └── README.md
 
-## Author
-- **Course:** MAI605 — Robotic Systems
-- **University:** Ajman University
