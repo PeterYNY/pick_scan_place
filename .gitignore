@@ -1,0 +1,17 @@
+# Build artifacts
+build/
+install/
+log/
+__pycache__/
+*.pyc
+*.egg-info/
+dist/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+*.swp
+*.save

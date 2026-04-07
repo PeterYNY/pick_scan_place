@@ -1,0 +1,189 @@
+<?xml version="1.0" ?>
+<sdf version="1.6">
+  <world name="pick_place_world">
+
+    <include>
+      <uri>model://sun</uri>
+    </include>
+
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <!-- Pick table -->
+    <model name="pick_table">
+      <static>true</static>
+      <pose>0.5 0.0 0.2 0 0 0</pose>
+      <link name="link">
+        <collision name="collision">
+          <geometry><box><size>0.4 0.4 0.4</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.4 0.4 0.4</size></box></geometry>
+          <material>
+            <ambient>0.6 0.4 0.2 1</ambient>
+            <diffuse>0.6 0.4 0.2 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Object to pick (small cube) -->
+    <model name="pick_object">
+      <pose>0.5 0.0 0.42 0 0 0</pose>
+      <link name="link">
+        <inertial>
+          <mass>0.1</mass>
+          <inertia>
+            <ixx>0.00001</ixx><iyy>0.00001</iyy><izz>0.00001</izz>
+            <ixy>0</ixy><ixz>0</ixz><iyz>0</iyz>
+          </inertia>
+        </inertial>
+        <collision name="collision">
+          <geometry><box><size>0.04 0.04 0.04</size></box></geometry>
+        </collision>
+        <visual name="visual">
+          <geometry><box><size>0.04 0.04 0.04</size></box></geometry>
+          <material>
+            <ambient>1.0 1.0 1.0 1</ambient>
+            <diffuse>1.0 1.0 1.0 1</diffuse>
+          </material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Bin A (Red) -->
+    <model name="bin_a">
+      <static>true</static>
+      <pose>0.5 -0.4 0.075 0 0 0</pose>
+      <link name="link">
+        <collision name="floor">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry><box><size>0.2 0.2 0.01</size></box></geometry>
+        </collision>
+        <visual name="floor_vis">
+          <pose>0 0 0 0 0 0</pose>
+          <geometry><box><size>0.2 0.2 0.01</size></box></geometry>
+          <material><ambient>0.8 0.1 0.1 1</ambient><diffuse>0.8 0.1 0.1 1</diffuse></material>
+        </visual>
+        <!-- Walls -->
+        <visual name="wall1"><pose>0.1 0 0.05 0 0 0</pose>
+          <geometry><box><size>0.01 0.2 0.1</size></box></geometry>
+          <material><ambient>0.8 0.1 0.1 0.5</ambient><diffuse>0.8 0.1 0.1 0.5</diffuse></material>
+        </visual>
+        <visual name="wall2"><pose>-0.1 0 0.05 0 0 0</pose>
+          <geometry><box><size>0.01 0.2 0.1</size></box></geometry>
+          <material><ambient>0.8 0.1 0.1 0.5</ambient><diffuse>0.8 0.1 0.1 0.5</diffuse></material>
+        </visual>
+        <visual name="wall3"><pose>0 0.1 0.05 0 0 0</pose>
+          <geometry><box><size>0.2 0.01 0.1</size></box></geometry>
+          <material><ambient>0.8 0.1 0.1 0.5</ambient><diffuse>0.8 0.1 0.1 0.5</diffuse></material>
+        </visual>
+        <visual name="wall4"><pose>0 -0.1 0.05 0 0 0</pose>
+          <geometry><box><size>0.2 0.01 0.1</size></box></geometry>
+          <material><ambient>0.8 0.1 0.1 0.5</ambient><diffuse>0.8 0.1 0.1 0.5</diffuse></material>
+        </visual>
+        <!-- Label -->
+        <visual name="label"><pose>0 0 0.001 0 0 0</pose>
+          <geometry><box><size>0.05 0.05 0.001</size></box></geometry>
+          <material><ambient>1 1 1 1</ambient><diffuse>1 1 1 1</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Bin B (Blue) -->
+    <model name="bin_b">
+      <static>true</static>
+      <pose>-0.3 -0.4 0.075 0 0 0</pose>
+      <link name="link">
+        <collision name="floor">
+          <geometry><box><size>0.2 0.2 0.01</size></box></geometry>
+        </collision>
+        <visual name="floor_vis">
+          <geometry><box><size>0.2 0.2 0.01</size></box></geometry>
+          <material><ambient>0.1 0.1 0.8 1</ambient><diffuse>0.1 0.1 0.8 1</diffuse></material>
+        </visual>
+        <visual name="wall1"><pose>0.1 0 0.05 0 0 0</pose>
+          <geometry><box><size>0.01 0.2 0.1</size></box></geometry>
+          <material><ambient>0.1 0.1 0.8 0.5</ambient><diffuse>0.1 0.1 0.8 0.5</diffuse></material>
+        </visual>
+        <visual name="wall2"><pose>-0.1 0 0.05 0 0 0</pose>
+          <geometry><box><size>0.01 0.2 0.1</size></box></geometry>
+          <material><ambient>0.1 0.1 0.8 0.5</ambient><diffuse>0.1 0.1 0.8 0.5</diffuse></material>
+        </visual>
+        <visual name="wall3"><pose>0 0.1 0.05 0 0 0</pose>
+          <geometry><box><size>0.2 0.01 0.1</size></box></geometry>
+          <material><ambient>0.1 0.1 0.8 0.5</ambient><diffuse>0.1 0.1 0.8 0.5</diffuse></material>
+        </visual>
+        <visual name="wall4"><pose>0 -0.1 0.05 0 0 0</pose>
+          <geometry><box><size>0.2 0.01 0.1</size></box></geometry>
+          <material><ambient>0.1 0.1 0.8 0.5</ambient><diffuse>0.1 0.1 0.8 0.5</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Bin C (Green) -->
+    <model name="bin_c">
+      <static>true</static>
+      <pose>0.1 -0.5 0.075 0 0 0</pose>
+      <link name="link">
+        <collision name="floor">
+          <geometry><box><size>0.2 0.2 0.01</size></box></geometry>
+        </collision>
+        <visual name="floor_vis">
+          <geometry><box><size>0.2 0.2 0.01</size></box></geometry>
+          <material><ambient>0.1 0.8 0.1 1</ambient><diffuse>0.1 0.8 0.1 1</diffuse></material>
+        </visual>
+        <visual name="wall1"><pose>0.1 0 0.05 0 0 0</pose>
+          <geometry><box><size>0.01 0.2 0.1</size></box></geometry>
+          <material><ambient>0.1 0.8 0.1 0.5</ambient><diffuse>0.1 0.8 0.1 0.5</diffuse></material>
+        </visual>
+        <visual name="wall2"><pose>-0.1 0 0.05 0 0 0</pose>
+          <geometry><box><size>0.01 0.2 0.1</size></box></geometry>
+          <material><ambient>0.1 0.8 0.1 0.5</ambient><diffuse>0.1 0.8 0.1 0.5</diffuse></material>
+        </visual>
+        <visual name="wall3"><pose>0 0.1 0.05 0 0 0</pose>
+          <geometry><box><size>0.2 0.01 0.1</size></box></geometry>
+          <material><ambient>0.1 0.8 0.1 0.5</ambient><diffuse>0.1 0.8 0.1 0.5</diffuse></material>
+        </visual>
+        <visual name="wall4"><pose>0 -0.1 0.05 0 0 0</pose>
+          <geometry><box><size>0.2 0.01 0.1</size></box></geometry>
+          <material><ambient>0.1 0.8 0.1 0.5</ambient><diffuse>0.1 0.8 0.1 0.5</diffuse></material>
+        </visual>
+      </link>
+    </model>
+
+    <!-- Camera (fixed, pointing at scan area) -->
+    <model name="scan_camera">
+      <static>true</static>
+      <pose>0.3 0.2 0.7 0 0.785 0</pose>
+      <link name="link">
+        <visual name="visual">
+          <geometry><box><size>0.03 0.03 0.03</size></box></geometry>
+          <material><ambient>0.2 0.2 0.2 1</ambient><diffuse>0.2 0.2 0.2 1</diffuse></material>
+        </visual>
+        <sensor type="camera" name="scan_camera">
+          <update_rate>10.0</update_rate>
+          <camera name="head">
+            <horizontal_fov>1.047</horizontal_fov>
+            <image>
+              <width>640</width>
+              <height>480</height>
+              <format>R8G8B8</format>
+            </image>
+            <clip><near>0.05</near><far>5.0</far></clip>
+          </camera>
+          <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
+            <ros>
+              <remapping>image_raw:=camera/image_raw</remapping>
+              <remapping>camera_info:=camera/camera_info</remapping>
+            </ros>
+            <camera_name>scan_camera</camera_name>
+            <frame_name>camera_link</frame_name>
+          </plugin>
+        </sensor>
+      </link>
+    </model>
+
+  </world>
+</sdf>
