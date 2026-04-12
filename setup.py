@@ -35,6 +35,7 @@ setup(
             'pick_scan_place_node = pick_scan_place.pick_place_node:main',
             'qr_scanner_node = pick_scan_place.qr_scanner_node:main',
             'qr_test_publisher = pick_scan_place.qr_test_publisher:main',
+            'scene_setup_node = pick_scan_place.scene_setup_node:main',
         ],
     },
 )

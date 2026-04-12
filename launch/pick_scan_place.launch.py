@@ -1,5 +1,6 @@
 """
 Launch file for the complete Pick-Scan-Place system.
+All visualized in RViz with collision objects for table, bins, and object.
 """
 import os
 from launch import LaunchDescription
@@ -10,40 +11,25 @@ from ament_index_python.packages import get_package_share_directory
 
 
 def generate_launch_description():
-    pkg_pick = get_package_share_directory('pick_scan_place')
-    pkg_gazebo = get_package_share_directory('gazebo_ros')
     pkg_panda = get_package_share_directory('moveit_resources_panda_moveit_config')
-    world_file = os.path.join(pkg_pick, 'worlds', 'pick_place.world')
-    robot_urdf = os.path.join(pkg_pick, 'urdf', 'panda_arm_gazebo.urdf')
 
-    # 1. Gazebo
-    gazebo = IncludeLaunchDescription(
-        PythonLaunchDescriptionSource(
-            os.path.join(pkg_gazebo, 'launch', 'gazebo.launch.py')),
-        launch_arguments={'world': world_file}.items(),
-    )
-
-    # 2. Spawn robot arm in Gazebo
-    spawn_robot = TimerAction(period=3.0, actions=[
-        Node(
-            package='gazebo_ros',
-            executable='spawn_entity.py',
-            arguments=[
-                '-file', robot_urdf,
-                '-entity', 'panda_arm',
-                '-x', '0', '-y', '0', '-z', '0.02',
-            ],
-            output='screen',
-        ),
-    ])
-
-    # 3. MoveIt 2 + Panda + RViz
+    # 1. MoveIt 2 + Panda + RViz
     moveit = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_panda, 'launch', 'demo.launch.py')),
     )
 
-    # 4. QR Test Publisher
+    # 2. Scene setup (adds table, bins, object to RViz)
+    scene_setup = TimerAction(period=5.0, actions=[
+        Node(
+            package='pick_scan_place',
+            executable='scene_setup_node',
+            name='scene_setup_node',
+            output='screen',
+        ),
+    ])
+
+    # 3. QR Test Publisher
     qr_publisher = TimerAction(period=6.0, actions=[
         Node(
             package='pick_scan_place',
@@ -54,7 +40,7 @@ def generate_launch_description():
         ),
     ])
 
-    # 5. QR Scanner Node
+    # 4. QR Scanner Node
     qr_scanner = TimerAction(period=8.0, actions=[
         Node(
             package='pick_scan_place',
@@ -65,7 +51,7 @@ def generate_launch_description():
         ),
     ])
 
-    # 6. Main Pick-Scan-Place Node
+    # 5. Main Pick-Scan-Place Node
     pick_place = TimerAction(period=12.0, actions=[
         Node(
             package='pick_scan_place',
@@ -77,9 +63,8 @@ def generate_launch_description():
     ])
 
     return LaunchDescription([
-        gazebo,
-        spawn_robot,
         moveit,
+        scene_setup,
         qr_publisher,
         qr_scanner,
         pick_place,
