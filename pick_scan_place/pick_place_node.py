@@ -151,7 +151,7 @@ class PickScanPlaceNode(Node):
         self.move(0.3, 0.3, 0.66)   # at scan station (aligned with scanner)
 
         L.info('Scanning QR...')
-        self.qr_result = None
+        # self.qr_result = None  # DO NOT reset - keep received QR
         t0 = time.time()
         while self.qr_result is None and (time.time() - t0) < 8.0:
             rclpy.spin_once(self, timeout_sec=0.5)
@@ -163,10 +163,10 @@ class PickScanPlaceNode(Node):
         else:
             L.warn('  No QR, default bin')
 
-        # Decide bin
-        if qr and 'a' in qr.lower():
+        # Decide bin based on QR content
+        if qr and qr.strip().lower().endswith('_a'):
             key = 'A'
-        elif qr and 'b' in qr.lower():
+        elif qr and qr.strip().lower().endswith('_b'):
             key = 'B'
         else:
             key = 'C'

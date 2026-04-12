@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Publishes a QR code image to the camera topic for testing.
-In a real system, the Gazebo camera would see an actual QR code on the object.
+Publishes a QR code image with configurable content.
+Change the 'qr_data' parameter to test different bins.
 """
 import rclpy
 from rclpy.node import Node
@@ -15,15 +15,19 @@ class QRTestPublisher(Node):
     def __init__(self):
         super().__init__('qr_test_publisher')
         self.declare_parameter('camera_topic', '/camera/image_raw')
+        self.declare_parameter('qr_data', 'category_a')
+
         topic = self.get_parameter('camera_topic').value
+        self.qr_data = self.get_parameter('qr_data').value
+
         self.publisher = self.create_publisher(Image, topic, 10)
         self.bridge = CvBridge()
         self.timer = self.create_timer(0.5, self.publish_qr)
-        self.get_logger().info(f'Publishing QR images to {topic}')
+        self.get_logger().info(f'Publishing QR "{self.qr_data}" to {topic}')
 
     def publish_qr(self):
         qr = qrcode.QRCode(version=1, box_size=10, border=5)
-        qr.add_data('category_a')
+        qr.add_data(self.qr_data)
         qr.make(fit=True)
         img = qr.make_image(fill_color="black", back_color="white")
         img_array = np.array(img.convert('RGB'))
@@ -40,7 +44,6 @@ def main(args=None):
         pass
     node.destroy_node()
     rclpy.shutdown()
-
 
 if __name__ == '__main__':
     main()
