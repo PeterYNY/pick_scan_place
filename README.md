@@ -1,7 +1,8 @@
 # Pick-Scan-Place: ROS 2 Robotic Manipulation System
 
+## MAI605 — Robotic Systems (ROS2) | Course Project I
 
-A complete ROS 2-based robotic manipulation pipeline implementing an industrial-style pick-scan-place workflow. The Panda robot picks an object from a fixed station, moves it to a scanning pose, decodes its QR code, and places it in a designated bin based on the encoded data.
+A complete ROS 2-based robotic manipulation pipeline implementing an industrial-style pick-scan-place workflow. The Panda robot picks an object, moves it to a scanning pose, decodes its QR code, and places it in a designated bin based on the encoded data.
 
 ## System Architecture
 
@@ -9,32 +10,28 @@ A complete ROS 2-based robotic manipulation pipeline implementing an industrial-
 - **Framework:** ROS 2 Humble
 - **Motion Planning:** MoveIt 2 (OMPL RRTConnect planner)
 - **QR Decoding:** pyzbar + cv_bridge
-- **Simulation:** Gazebo + RViz
+- **Visualization:** RViz 2
 
-## Nodes
+## Quick Start
 
-| Node | Description |
-|------|-------------|
-| `pick_scan_place_node` | Main orchestrator — executes pick, scan, place workflow |
-| `qr_scanner_node` | Subscribes to camera images, decodes QR codes via pyzbar |
-| `qr_test_publisher` | Publishes test QR code images for simulation testing |
+Launch the entire system with one command, choosing which bin to send the object to:
 
-## Topics
+### Send object to Bin A (Red):
+```bash
+ros2 launch pick_scan_place pick_scan_place.launch.py qr_data:=category_a
+```
 
-| Topic | Type | Purpose |
-|-------|------|---------|
-| `/barcode` | `std_msgs/String` | Decoded QR code data |
-| `/camera/image_raw` | `sensor_msgs/Image` | Camera feed |
-| `/move_action` | `MoveGroup` | MoveIt 2 motion commands |
-| `/panda_hand_controller/gripper_cmd` | `GripperCommand` | Gripper open/close |
+### Send object to Bin B (Blue):
+```bash
+ros2 launch pick_scan_place pick_scan_place.launch.py qr_data:=category_b
+```
 
-## Decision Logic
+### Send object to Bin C (Green):
+```bash
+ros2 launch pick_scan_place pick_scan_place.launch.py qr_data:=category_c
+```
 
-| QR Content | Bin Assignment |
-|------------|---------------|
-| Contains 'A' or 'category_a' | Bin A (Red) |
-| Contains 'B' or 'category_b' | Bin B (Blue) |
-| Default / timeout | Bin C (Green) |
+After launching, in RViz: click **Add** → **By topic** → `/visualization_marker_array` → **OK** to see the colored scene.
 
 ## Installation
 
@@ -45,10 +42,10 @@ A complete ROS 2-based robotic manipulation pipeline implementing an industrial-
 
 ### Install Dependencies
 ```bash
-sudo apt install -y ros-humble-moveit \
+sudo apt install -y \
+  ros-humble-moveit \
   ros-humble-moveit-resources-panda-moveit-config \
   ros-humble-moveit-resources-panda-description \
-  ros-humble-gazebo-ros-pkgs \
   ros-humble-ros2-controllers \
   ros-humble-ros2-control \
   libzbar0
@@ -63,44 +60,25 @@ colcon build --packages-select pick_scan_place
 source install/setup.bash
 ```
 
-## Usage
+## Decision Logic
 
-### Launch entire system (one command)
-```bash
-ros2 launch pick_scan_place pick_scan_place.launch.py
-```
-
-This starts Gazebo, MoveIt 2, RViz, QR scanner, and the pick-place pipeline automatically.
-
-### Run nodes individually
-```bash
-# Terminal 1: MoveIt 2 + Panda
-ros2 launch moveit_resources_panda_moveit_config demo.launch.py
-
-# Terminal 2: QR Scanner
-ros2 run pick_scan_place qr_scanner_node
-
-# Terminal 3: QR Test Publisher
-ros2 run pick_scan_place qr_test_publisher
-
-# Terminal 4: Main workflow
-ros2 run pick_scan_place pick_scan_place_node
-```
+| QR Content | Target Bin | Color |
+|------------|-----------|-------|
+| `category_a` | Bin A | 🔴 Red |
+| `category_b` | Bin B | 🔵 Blue |
+| `category_c` / unknown / no QR | Bin C | 🟢 Green |
 
 ## Project Structure
-pick_scan_place/
-├── pick_scan_place/
-│   ├── init.py
-│   ├── pick_place_node.py       # Main pick-scan-place orchestrator
-│   ├── qr_scanner_node.py       # QR code detection and decoding
-│   └── qr_test_publisher.py     # Test QR image publisher
-├── launch/
-│   └── pick_scan_place.launch.py
-├── worlds/
-│   └── pick_place.world          # Gazebo world with table and bins
-├── config/
-├── urdf/
-├── package.xml
-├── setup.py
-└── README.md
+## Nodes
 
+| Node | Description |
+|------|-------------|
+| `pick_scan_place_node` | Main orchestrator — executes pick, scan, place workflow |
+| `qr_scanner_node` | Subscribes to camera images, decodes QR codes via pyzbar |
+| `qr_test_publisher` | Publishes test QR code images for simulation |
+| `scene_setup_node` | Adds colored markers (table, bins, scanner) to RViz |
+
+## Author
+- **Course:** MAI605 — Robotic Systems
+- **University:** Ajman University
+- **Instructor:** Dr. Omar Shalash
