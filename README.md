@@ -89,6 +89,11 @@ ros2 pkg executables pick_scan_place
 ```
 
 You should see:
+pick_scan_place pick_place_node
+pick_scan_place qr_scanner_node
+pick_scan_place qr_test_publisher
+pick_scan_place scene_setup_node
+
 ## Running the Project
 
 Launch the system and choose which bin to send the object to. Use ONE of these commands:
@@ -172,6 +177,20 @@ sudo apt install -y ros-humble-moveit-resources-panda-moveit-config ros-humble-m
 ```
 
 ## Project Structure
+pick_scan_place/
+├── pick_scan_place/
+│   ├── pick_place_node.py       # Main pick-scan-place orchestrator
+│   ├── qr_scanner_node.py       # QR code detection and decoding
+│   ├── qr_test_publisher.py     # Test QR image publisher
+│   └── scene_setup_node.py      # Visual markers for RViz
+├── launch/
+│   └── pick_scan_place.launch.py # Single-command system launch
+├── worlds/
+│   └── pick_place.world
+├── package.xml
+├── setup.py
+└── README.md
+
 ## Nodes Description
 
 | Node | Description |
