@@ -2,7 +2,7 @@
 
 ## MAI605 — Robotic Systems (ROS2) | Course Project I
 
-A complete ROS 2-based robotic manipulation pipeline implementing an industrial-style pick-scan-place workflow. The Panda robot picks an object, moves it to a scanning pose, decodes its QR code, and places it in a designated bin based on the encoded data.
+A complete ROS 2-based robotic manipulation pipeline. The Panda robot picks an object, moves it to a scanning pose, decodes its QR code, and places it in the correct bin based on the QR data.
 
 ## System Architecture
 
@@ -12,16 +12,37 @@ A complete ROS 2-based robotic manipulation pipeline implementing an industrial-
 - **QR Decoding:** pyzbar + cv_bridge
 - **Visualization:** RViz 2
 
-## ⚠️ Installation (Important - Follow ALL Steps)
+## Complete Installation Guide (Fresh Ubuntu 22.04)
 
-### Prerequisites
-- Ubuntu 22.04
-- ROS 2 Humble installed
-- MoveIt 2 installed
+Follow these steps **in order**. Skipping any step will cause failures.
 
-### Step 1: Install ROS 2 system dependencies
+### Step 1: Install ROS 2 Humble
+
 ```bash
+# Set locale
+sudo apt update && sudo apt install -y locales
+sudo locale-gen en_US en_US.UTF-8
+sudo update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+export LANG=en_US.UTF-8
+
+# Add ROS 2 apt repository
+sudo apt install -y software-properties-common curl
+sudo add-apt-repository universe -y
+sudo curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg
+echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null
+
+# Install ROS 2 Humble
 sudo apt update
+sudo apt install -y ros-humble-desktop ros-dev-tools
+
+# Source ROS 2 automatically in every terminal
+echo "source /opt/ros/humble/setup.bash" >> ~/.bashrc
+source ~/.bashrc
+```
+
+### Step 2: Install MoveIt 2 and System Dependencies
+
+```bash
 sudo apt install -y \
   ros-humble-moveit \
   ros-humble-moveit-resources-panda-moveit-config \
@@ -29,46 +50,70 @@ sudo apt install -y \
   ros-humble-ros2-controllers \
   ros-humble-ros2-control \
   ros-humble-cv-bridge \
+  ros-humble-image-transport \
+  ros-humble-rviz2 \
+  python3-colcon-common-extensions \
   libzbar0
 ```
 
-### Step 2: Install Python dependencies (REQUIRED for QR scanning!)
+### Step 3: Install Python Dependencies (CRITICAL!)
+
 ```bash
 pip3 install pyzbar opencv-python qrcode[pil] "numpy<2" --break-system-packages
 ```
 
-⚠️ **WITHOUT these Python packages, the QR scanner will fail silently and ALL items will go to Bin C by default!**
+> ⚠️ **WARNING:** Without these Python packages, the QR scanner will silently fail and ALL objects will be placed in Bin C regardless of QR content.
 
-### Step 3: Clone and build
+### Step 4: Clone and Build the Project
+
 ```bash
 mkdir -p ~/ros2_ws/src
 cd ~/ros2_ws/src
 git clone https://github.com/PeterYNY/pick_scan_place.git
 cd ~/ros2_ws
 colcon build --packages-select pick_scan_place
-source install/setup.bash
+
+# Source the workspace automatically in every terminal
+echo "source ~/ros2_ws/install/setup.bash" >> ~/.bashrc
+source ~/.bashrc
 ```
 
-## Quick Start
+### Step 5: Verify Installation
 
-Launch the entire system with one command, choosing which bin to send the object to:
-
-### Send object to Bin A (Red):
 ```bash
+# Check that the package is found
+ros2 pkg list | grep pick_scan_place
+
+# Check that the executables are registered
+ros2 pkg executables pick_scan_place
+```
+
+You should see:
+## Running the Project
+
+Launch the system and choose which bin to send the object to. Use ONE of these commands:
+
+```bash
+# Send to Bin A (Red)
 ros2 launch pick_scan_place pick_scan_place.launch.py qr_data:=category_a
-```
 
-### Send object to Bin B (Blue):
-```bash
+# Send to Bin B (Blue)
 ros2 launch pick_scan_place pick_scan_place.launch.py qr_data:=category_b
-```
 
-### Send object to Bin C (Green):
-```bash
+# Send to Bin C (Green)
 ros2 launch pick_scan_place pick_scan_place.launch.py qr_data:=category_c
 ```
 
-After launching, in RViz: click **Add** → **By topic** → `/visualization_marker_array` → **OK** to see the colored scene.
+### Important: Configure RViz to See the Scene
+
+When RViz opens, the bins and table won't be visible by default. Add them:
+
+1. Click **Add** (bottom-left of RViz)
+2. Click the **By topic** tab
+3. Find `/visualization_marker_array` and select **MarkerArray**
+4. Click **OK**
+
+You should now see the brown table, white cube, three colored bins, and the QR scanner.
 
 ## Decision Logic
 
@@ -76,21 +121,26 @@ After launching, in RViz: click **Add** → **By topic** → `/visualization_mar
 |------------|-----------|-------|
 | `category_a` | Bin A | 🔴 Red |
 | `category_b` | Bin B | 🔵 Blue |
-| `category_c` / unknown / no QR | Bin C | 🟢 Green |
+| `category_c` / unknown / no QR | Bin C | 🟢 Green (default) |
 
 ## Troubleshooting
 
-### "All items go to Bin C regardless of qr_data"
-This means the QR scanner isn't detecting QR codes. Check:
+### Problem: All objects go to Bin C regardless of qr_data
+
+**Cause:** Python QR libraries are missing.
+
 ```bash
-pip3 list | grep -iE "pyzbar|opencv|qrcode"
+# Check what's installed
+pip3 list | grep -iE "pyzbar|opencv|qrcode|numpy"
 ```
-If any are missing, install them:
+
+If any of these are missing, install them:
 ```bash
-pip3 install pyzbar opencv-python qrcode[pil] --break-system-packages
+pip3 install pyzbar opencv-python qrcode[pil] "numpy<2" --break-system-packages
 sudo apt install -y libzbar0
 ```
-Then rebuild:
+
+Then **clean rebuild**:
 ```bash
 cd ~/ros2_ws
 rm -rf build install log
@@ -98,20 +148,31 @@ colcon build --packages-select pick_scan_place
 source install/setup.bash
 ```
 
-### "No executable found"
+### Problem: "No executable found"
+
 You forgot to source the workspace:
 ```bash
 source ~/ros2_ws/install/setup.bash
 ```
 
-### "NumPy 2.x error / cv_bridge crash"
-Downgrade numpy:
+### Problem: "NumPy 2.x error" or "cv_bridge crash"
+
 ```bash
 pip3 install "numpy<2" --break-system-packages
 ```
 
+### Problem: Bins/table not visible in RViz
+
+Add the MarkerArray display: **Add** → **By topic** → `/visualization_marker_array` → **OK**
+
+### Problem: "Package 'moveit_resources_panda_moveit_config' not found"
+
+```bash
+sudo apt install -y ros-humble-moveit-resources-panda-moveit-config ros-humble-moveit-resources-panda-description
+```
+
 ## Project Structure
-## Nodes
+## Nodes Description
 
 | Node | Description |
 |------|-------------|
@@ -119,6 +180,18 @@ pip3 install "numpy<2" --break-system-packages
 | `qr_scanner_node` | Subscribes to camera images, decodes QR codes via pyzbar |
 | `qr_test_publisher` | Publishes test QR code images for simulation |
 | `scene_setup_node` | Adds colored markers (table, bins, scanner) to RViz |
+
+## ROS 2 Topics & Actions
+
+| Topic / Action | Type | Purpose |
+|---------------|------|---------|
+| `/move_action` | MoveGroup action | Send motion plans to MoveIt 2 |
+| `/panda_hand_controller/gripper_cmd` | GripperCommand action | Open/close gripper |
+| `/camera/image_raw` | sensor_msgs/Image | Camera feed for QR scanner |
+| `/barcode` | std_msgs/String | Decoded QR data |
+| `/visualization_marker_array` | MarkerArray | Visual scene markers |
+| `/joint_states` | sensor_msgs/JointState | Robot joint positions |
+| `/tf` | tf2_msgs/TFMessage | Coordinate transforms |
 
 ## Author
 - **Course:** MAI605 — Robotic Systems
