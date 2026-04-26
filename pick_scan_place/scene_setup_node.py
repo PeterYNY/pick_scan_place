@@ -91,43 +91,43 @@ class SceneSetupNode(Node):
         self.object_state = msg.data
         self._dynamic_object_marker()
 
-    def _object_pose_from_state(self):
-        if self.object_state == 'attached':
-            return 0.30, 0.00, 0.58
-
-        if self.object_state == 'bin_A':
-            return -0.20, -0.35, 0.36
-
-        if self.object_state == 'bin_B':
-            return -0.35, -0.35, 0.36
-
-        if self.object_state == 'bin_C':
-            return -0.50, -0.35, 0.36
-
-        # default = table
-        return 0.50, 0.00, 0.25
 
     def _dynamic_object_marker(self):
-        x, y, z = self._object_pose_from_state()
-
         m = Marker()
-        m.header.frame_id = 'panda_link0'
         m.ns = 'dynamic_object'
         m.id = self.object_marker_id
         m.type = Marker.CUBE
         m.action = Marker.ADD
-        m.pose.position = Point(x=float(x), y=float(y), z=float(z))
-        m.pose.orientation = Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
         m.scale = Vector3(x=0.04, y=0.04, z=0.04)
         m.color = ColorRGBA(r=1.0, g=1.0, b=1.0, a=1.0)
+        m.pose.orientation = Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
 
-        # Remove old object marker
+        if self.object_state == 'attached':
+            m.header.frame_id = 'panda_link8'   # follows gripper
+            m.pose.position = Point(x=0.0, y=0.0, z=0.08)
+
+        elif self.object_state == 'bin_A':
+            m.header.frame_id = 'panda_link0'
+            m.pose.position = Point(x=-0.20, y=-0.35, z=0.28)
+
+        elif self.object_state == 'bin_B':
+            m.header.frame_id = 'panda_link0'
+            m.pose.position = Point(x=-0.35, y=-0.35, z=0.28)
+
+        elif self.object_state == 'bin_C':
+            m.header.frame_id = 'panda_link0'
+            m.pose.position = Point(x=-0.50, y=-0.35, z=0.28)
+
+        else:
+            m.header.frame_id = 'panda_link0'
+            m.pose.position = Point(x=0.50, y=0.00, z=0.25)
+
+        # Remove old marker
         self.markers.markers = [
             marker for marker in self.markers.markers
             if not (marker.ns == 'dynamic_object' and marker.id == self.object_marker_id)
         ]
 
-        # Add updated marker
         self.markers.markers.append(m)
 
 

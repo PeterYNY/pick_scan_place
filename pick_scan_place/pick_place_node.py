@@ -60,6 +60,12 @@ class PickScanPlaceNode(Node):
         self.object_state_pub.publish(msg)
         self.get_logger().info(f'Object state: {state}')
 
+    def publish_object_state(self, state):
+        msg = String()
+        msg.data = state
+        self.object_state_pub.publish(msg)
+        self.get_logger().info(f'Object state: {state}')
+
     def add_collision_box(self, name, x, y, z, sx, sy, sz):
         obj = CollisionObject()
         obj.header.frame_id = 'panda_link0'
@@ -225,19 +231,19 @@ class PickScanPlaceNode(Node):
         self.publish_object_state('table')
         self.grip(False)
 
-        # Start high, go above object, go down, grab, go back up
         L.info('Go above object')
-        self.move(0.4, 0.0, 0.5)    # safe height
-        self.move(0.5, 0.0, 0.4)    # above object
-        self.move(0.5, 0.0, 0.36)   # at object (above table z=0.2)
+        self.move(0.4, 0.0, 0.55)    # safe transition
+        self.move(0.5, 0.0, 0.50)    # above cube
+        self.move(0.5, 0.0, 0.42)    # close to cube
 
         L.info('Grab object')
         self.grip(True)
+        time.sleep(0.5)
         self.publish_object_state('attached')
 
         L.info('Lift up')
-        self.move(0.5, 0.0, 0.4)    # lift
-        self.move(0.5, 0.0, 0.5)    # safe height
+        self.move(0.5, 0.0, 0.50)    # lift cube with claw
+        self.move(0.5, 0.0, 0.60)    # safe height
 
         # -- SCAN --
         L.info('')
