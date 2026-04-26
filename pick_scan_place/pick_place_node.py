@@ -9,6 +9,7 @@ from moveit_msgs.action import MoveGroup
 from moveit_msgs.msg import (
     MotionPlanRequest, PlanningOptions, Constraints,
     PositionConstraint, OrientationConstraint, BoundingVolume,
+    CollisionObject,
 )
 from control_msgs.action import GripperCommand
 from geometry_msgs.msg import Point, Quaternion, Pose
@@ -31,11 +32,15 @@ class PickScanPlaceNode(Node):
         self.qr_result = None
         self.create_subscription(String, '/barcode', self.qr_cb, 10)
 
+        self.collision_pub = self.create_publisher(
+            CollisionObject, '/collision_object', 10)
+
         self.bins = {
-            'A': {'x': 0.5, 'y': -0.4, 'z': 0.15, 'name': 'Bin A (Red)'},
-            'B': {'x': 0.3, 'y': -0.4, 'z': 0.15, 'name': 'Bin B (Blue)'},
-            'C': {'x': 0.1, 'y': -0.4, 'z': 0.15, 'name': 'Bin C (Green)'},
+            'A': {'x': 0.45, 'y': -0.35, 'z': 0.32, 'name': 'Bin A (Red)'},
+            'B': {'x': 0.30, 'y': -0.35, 'z': 0.32, 'name': 'Bin B (Blue)'},
+            'C': {'x': 0.15, 'y': -0.35, 'z': 0.32, 'name': 'Bin C (Green)'},
         }
+
 
         self.get_logger().info('Waiting for servers...')
         self.move_client.wait_for_server()
@@ -45,6 +50,79 @@ class PickScanPlaceNode(Node):
 
     def qr_cb(self, msg):
         self.qr_result = msg.data
+
+    def add_collision_box(self, name, x, y, z, sx, sy, sz):
+        obj = CollisionObject()
+        obj.header.frame_id = 'panda_link0'
+        obj.id = name
+
+        box = SolidPrimitive()
+        box.type = SolidPrimitive.BOX
+        box.dimensions = [float(sx), float(sy), float(sz)]
+
+        pose = Pose()
+        pose.position.x = float(x)
+        pose.position.y = float(y)
+        pose.position.z = float(z)
+        pose.orientation.w = 1.0
+
+        obj.primitives.append(box)
+        obj.primitive_poses.append(pose)
+        obj.operation = CollisionObject.ADD
+
+        self.collision_pub.publish(obj)
+        self.get_logger().info(f'Added collision object: {name}')
+
+    def add_collision_scene(self):
+        # Table top
+        self.add_collision_box('table_top', 0.55, 0.0, 0.2, 0.8, 0.7, 0.02)
+
+        # Table legs
+        self.add_collision_box('table_leg_1', 0.3, -0.25, 0.1, 0.04, 0.04, 0.2)
+        self.add_collision_box('table_leg_2', 0.7, -0.25, 0.1, 0.04, 0.04, 0.2)
+        self.add_collision_box('table_leg_3', 0.3, 0.25, 0.1, 0.04, 0.04, 0.2)
+        self.add_collision_box('table_leg_4', 0.7, 0.25, 0.1, 0.04, 0.04, 0.2)
+
+        # Scanner pole/camera
+        self.add_collision_box('scanner_pole', 0.3, 0.58, 0.30, 0.03, 0.03, 0.60)
+        self.add_collision_box('scanner_arm', 0.3, 0.52, 0.55, 0.03, 0.14, 0.03)
+        self.add_collision_box('scanner_head', 0.3, 0.45, 0.55, 0.07, 0.04, 0.07)
+
+        # Bin walls simplified as obstacles
+        #for key, b in self.bins.items():
+            #x = b['x']
+            #y = b['y']
+            #self.add_collision_box(f'bin_{key}_base', x, y, 0.005, 0.15, 0.15, 0.01)
+            #self.add_collision_box(f'bin_{key}_left', x - 0.075, y, 0.04, 0.008, 0.15, 0.075)
+            #self.add_collision_box(f'bin_{key}_right', x + 0.075, y, 0.04, 0.008, 0.15, 0.075)
+            #self.add_collision_box(f'bin_{key}_front', x, y - 0.075, 0.04, 0.15, 0.008, 0.075)
+            #self.add_collision_box(f'bin_{key}_back', x, y + 0.075, 0.04, 0.15, 0.008, 0.075)
+
+        
+        # Bin walls simplified as obstacles (with opening on top)
+        for key, b in self.bins.items():
+            x = b['x']
+            y = b['y']
+
+            # Base (on table)
+            self.add_collision_box(
+                f'bin_{key}_base', x, y, 0.21, 0.15, 0.15, 0.01
+            )
+
+            # Side walls (shorter so gripper can enter from above)
+            self.add_collision_box(
+                f'bin_{key}_left', x - 0.075, y, 0.28, 0.008, 0.15, 0.12
+            )
+            self.add_collision_box(
+                f'bin_{key}_right', x + 0.075, y, 0.28, 0.008, 0.15, 0.12
+            )
+            self.add_collision_box(
+                f'bin_{key}_front', x, y - 0.075, 0.28, 0.15, 0.008, 0.12
+            )
+            self.add_collision_box(
+                f'bin_{key}_back', x, y + 0.075, 0.28, 0.15, 0.008, 0.12
+            )
+
 
     def move(self, x, y, z):
         req = MotionPlanRequest()
@@ -116,6 +194,9 @@ class PickScanPlaceNode(Node):
             return
         self._done = True
         L = self.get_logger()
+        L.info('Adding MoveIt collision scene...')
+        self.add_collision_scene()
+        time.sleep(1.0)
 
         L.info('')
         L.info('====== PICK-SCAN-PLACE ======')
@@ -131,7 +212,7 @@ class PickScanPlaceNode(Node):
         L.info('Go above object')
         self.move(0.4, 0.0, 0.5)    # safe height
         self.move(0.5, 0.0, 0.4)    # above object
-        self.move(0.5, 0.0, 0.30)   # at object (above table z=0.2)
+        self.move(0.5, 0.0, 0.36)   # at object (above table z=0.2)
 
         L.info('Grab object')
         self.grip(True)
@@ -175,8 +256,8 @@ class PickScanPlaceNode(Node):
 
         # Lift from scan
         L.info('Leave scan station')
-        self.move(0.3, 0.3, 0.5)    # lift up
-        self.move(0.3, 0.0, 0.5)    # back to center
+        self.move(0.3, 0.3, 0.75)    # lift up
+        self.move(0.3, 0.0, 0.75)    # back to center
 
         # -- PLACE --
         L.info('')
@@ -185,21 +266,26 @@ class PickScanPlaceNode(Node):
         bx, by, bz = b['x'], b['y'], b['z']
 
         L.info('Go above bin')
-        self.move(bx, 0.0, 0.5)     # transition above
-        self.move(bx, by, 0.5)      # above bin
-        self.move(bx, by, 0.35)     # lower toward bin
-        self.move(bx, by, bz)       # in bin
+        if not self.move(bx, by, 0.70):
+            L.error('Failed to reach above bin')
+            return
 
-        L.info('Release object')
+        L.info('Lower close to bin')
+        if not self.move(bx, by, 0.42):
+            L.error('Failed to lower close to bin')
+            return
+
+        L.info('Release object inside bin')
         self.grip(False)
 
         L.info('Retreat')
-        self.move(bx, by, 0.35)     # up from bin
-        self.move(bx, by, 0.5)      # safe height
+        if not self.move(bx, by, 0.70):
+            L.error('Failed to retreat from bin')
+            return
 
         L.info('Return home')
-        self.move(0.3, 0.0, 0.5)
-        self.move(0.3, 0.0, 0.6)
+        self.move(0.3, 0.0, 0.70)
+        self.move(0.3, 0.0, 0.60)
 
         L.info('')
         L.info('====== DONE ======')

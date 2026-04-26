@@ -19,7 +19,7 @@ class SceneSetupNode(Node):
         time.sleep(2.0)
 
         # Table
-        self._box(0.5, 0.0, 0.2, 0.5, 0.6, 0.02, 0.55, 0.35, 0.17)
+        self._box(0.55, 0.0, 0.2, 0.8, 0.7, 0.02, 0.55, 0.35, 0.17)
         self._box(0.3, -0.25, 0.1, 0.04, 0.04, 0.2, 0.45, 0.28, 0.12)
         self._box(0.7, -0.25, 0.1, 0.04, 0.04, 0.2, 0.45, 0.28, 0.12)
         self._box(0.3, 0.25, 0.1, 0.04, 0.04, 0.2, 0.45, 0.28, 0.12)
@@ -28,15 +28,15 @@ class SceneSetupNode(Node):
         # Object
         self._box(0.5, 0.0, 0.25, 0.04, 0.04, 0.04, 1.0, 1.0, 1.0)
 
-        # Bins aligned in a row at y=-0.4
-        self._bin(0.5, -0.4, 1.0, 0.15, 0.15)
-        self._label('Bin A', 0.5, -0.4, 0.12, 1.0, 0.3, 0.3)
+        # Bins on top of the table
+        self._bin(0.45, -0.35, 1.0, 0.15, 0.15)
+        self._label('Bin A', 0.45, -0.35, 0.35, 1.0, 0.3, 0.3)
 
-        self._bin(0.3, -0.4, 0.15, 0.15, 1.0)
-        self._label('Bin B', 0.3, -0.4, 0.12, 0.3, 0.3, 1.0)
+        self._bin(0.30, -0.35, 0.15, 0.15, 1.0)
+        self._label('Bin B', 0.30, -0.35, 0.35, 0.3, 0.3, 1.0)
 
-        self._bin(0.1, -0.4, 0.15, 0.85, 0.15)
-        self._label('Bin C', 0.1, -0.4, 0.12, 0.3, 1.0, 0.3)
+        self._bin(0.15, -0.35, 0.15, 0.85, 0.15)
+        self._label('Bin C', 0.15, -0.35, 0.35, 0.3, 1.0, 0.3)
 
         # Scan station - horizontal scanner facing the arm
         # Vertical pole
@@ -91,11 +91,12 @@ class SceneSetupNode(Node):
     def _bin(self, x, y, r, g, b):
         s = 0.15
         t = 0.008
-        self._box(x, y, 0.005, s, s, 0.01, r, g, b, 0.9)
-        self._box(x+s/2, y, 0.04, t, s, 0.075, r*0.7, g*0.7, b*0.7, 0.7)
-        self._box(x-s/2, y, 0.04, t, s, 0.075, r*0.7, g*0.7, b*0.7, 0.7)
-        self._box(x, y+s/2, 0.04, s, t, 0.075, r*0.7, g*0.7, b*0.7, 0.7)
-        self._box(x, y-s/2, 0.04, s, t, 0.075, r*0.7, g*0.7, b*0.7, 0.7)
+        table_top_z = 0.21
+        self._box(x, y, table_top_z, s, s, 0.01, r, g, b, 0.9)
+        self._box(x+s/2, y, table_top_z + 0.04, t, s, 0.075, r*0.7, g*0.7, b*0.7, 0.7)
+        self._box(x-s/2, y, table_top_z + 0.04, t, s, 0.075, r*0.7, g*0.7, b*0.7, 0.7)
+        self._box(x, y+s/2, table_top_z + 0.04, s, t, 0.075, r*0.7, g*0.7, b*0.7, 0.7)
+        self._box(x, y-s/2, table_top_z + 0.04, s, t, 0.075, r*0.7, g*0.7, b*0.7, 0.7)
 
     def _label(self, text, x, y, z, r, g, b):
         m = Marker()
