@@ -231,26 +231,21 @@ pick_scan_place/
 | `/tf` | tf2_msgs/TFMessage | Coordinate transforms |
 
 cd ~/ros2_ws/src/pick_scan_place
+
 git checkout malek
 
-# Verify you're on it
 git branch
 
-# Rebuild with their code
 cd ~/ros2_ws
+
 rm -rf build install log
+
 colcon build --packages-select pick_scan_place
+
 source install/setup.bash
 
-# Test it
 ros2 launch pick_scan_place pick_scan_place.launch.py qr_data:=category_a
 
 
-cd ~/ros2_ws/src/pick_scan_place
-git checkout main
 
-cd ~/ros2_ws
-rm -rf build install log
-colcon build --packages-select pick_scan_place
-source install/setup.bash
 
