@@ -5,17 +5,31 @@ import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Point, Quaternion, Vector3
 from visualization_msgs.msg import Marker, MarkerArray
-from std_msgs.msg import ColorRGBA
+from std_msgs.msg import ColorRGBA, String
 import time
 
 
 class SceneSetupNode(Node):
     def __init__(self):
         super().__init__('scene_setup_node')
+
         self.marker_pub = self.create_publisher(
             MarkerArray, '/visualization_marker_array', 10)
+
         self.mid = 0
         self.markers = MarkerArray()
+
+        # Object state (for moving cube)
+        self.object_state = 'table'
+
+        # Subscribe to object state
+        self.create_subscription(
+            String,
+            '/object_state',
+            self.object_state_cb,
+            10
+        )
+
         time.sleep(2.0)
 
         # First Table
@@ -34,7 +48,10 @@ class SceneSetupNode(Node):
         self._box(-0.15, -0.22, 0.1, 0.04, 0.04, 0.2, 0.45, 0.28, 0.12)
 
         # Object
-        self._box(0.5, 0.0, 0.25, 0.04, 0.04, 0.04, 1.0, 1.0, 1.0)
+        #self._box(0.5, 0.0, 0.25, 0.04, 0.04, 0.04, 1.0, 1.0, 1.0)
+        # Object marker will be updated dynamically
+        self.object_marker_id = self.mid
+        self._dynamic_object_marker()
 
         # Bins centered on second table
         self._bin(-0.20, -0.35, 1.0, 0.15, 0.15)
@@ -67,6 +84,53 @@ class SceneSetupNode(Node):
 
     def _pub(self):
         self.marker_pub.publish(self.markers)
+
+
+
+    def object_state_cb(self, msg):
+        self.object_state = msg.data
+        self._dynamic_object_marker()
+
+    def _object_pose_from_state(self):
+        if self.object_state == 'attached':
+            return 0.30, 0.00, 0.58
+
+        if self.object_state == 'bin_A':
+            return -0.20, -0.35, 0.36
+
+        if self.object_state == 'bin_B':
+            return -0.35, -0.35, 0.36
+
+        if self.object_state == 'bin_C':
+            return -0.50, -0.35, 0.36
+
+        # default = table
+        return 0.50, 0.00, 0.25
+
+    def _dynamic_object_marker(self):
+        x, y, z = self._object_pose_from_state()
+
+        m = Marker()
+        m.header.frame_id = 'panda_link0'
+        m.ns = 'dynamic_object'
+        m.id = self.object_marker_id
+        m.type = Marker.CUBE
+        m.action = Marker.ADD
+        m.pose.position = Point(x=float(x), y=float(y), z=float(z))
+        m.pose.orientation = Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
+        m.scale = Vector3(x=0.04, y=0.04, z=0.04)
+        m.color = ColorRGBA(r=1.0, g=1.0, b=1.0, a=1.0)
+
+        # Remove old object marker
+        self.markers.markers = [
+            marker for marker in self.markers.markers
+            if not (marker.ns == 'dynamic_object' and marker.id == self.object_marker_id)
+        ]
+
+        # Add updated marker
+        self.markers.markers.append(m)
+
+
 
     def _box(self, x, y, z, sx, sy, sz, r, g, b, a=1.0):
         m = Marker()

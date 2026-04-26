@@ -32,6 +32,8 @@ class PickScanPlaceNode(Node):
         self.qr_result = None
         self.create_subscription(String, '/barcode', self.qr_cb, 10)
 
+        self.object_state_pub = self.create_publisher(String, '/object_state', 10)
+
         self.collision_pub = self.create_publisher(
             CollisionObject, '/collision_object', 10)
         
@@ -51,6 +53,12 @@ class PickScanPlaceNode(Node):
 
     def qr_cb(self, msg):
         self.qr_result = msg.data
+
+    def publish_object_state(self, state):
+        msg = String()
+        msg.data = state
+        self.object_state_pub.publish(msg)
+        self.get_logger().info(f'Object state: {state}')
 
     def add_collision_box(self, name, x, y, z, sx, sy, sz):
         obj = CollisionObject()
@@ -214,6 +222,7 @@ class PickScanPlaceNode(Node):
         L.info('-- PICK --')
 
         L.info('Open gripper')
+        self.publish_object_state('table')
         self.grip(False)
 
         # Start high, go above object, go down, grab, go back up
@@ -224,6 +233,7 @@ class PickScanPlaceNode(Node):
 
         L.info('Grab object')
         self.grip(True)
+        self.publish_object_state('attached')
 
         L.info('Lift up')
         self.move(0.5, 0.0, 0.4)    # lift
@@ -290,6 +300,7 @@ class PickScanPlaceNode(Node):
 
         L.info('Release object inside bin')
         self.grip(False)
+        self.publish_object_state(f'bin_{key}')
 
         L.info('Retreat')
         if not self.move(bx, by, 0.75):
