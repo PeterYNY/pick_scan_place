@@ -34,11 +34,12 @@ class PickScanPlaceNode(Node):
 
         self.collision_pub = self.create_publisher(
             CollisionObject, '/collision_object', 10)
-
+        
+        
         self.bins = {
-            'A': {'x': 0.45, 'y': -0.35, 'z': 0.32, 'name': 'Bin A (Red)'},
-            'B': {'x': 0.30, 'y': -0.35, 'z': 0.32, 'name': 'Bin B (Blue)'},
-            'C': {'x': 0.15, 'y': -0.35, 'z': 0.32, 'name': 'Bin C (Green)'},
+            'A': {'x': -0.20, 'y': -0.35, 'z': 0.32, 'name': 'Bin A (Red)'},
+            'B': {'x': -0.35, 'y': -0.35, 'z': 0.32, 'name': 'Bin B (Blue)'},
+            'C': {'x': -0.50, 'y': -0.35, 'z': 0.32, 'name': 'Bin C (Green)'},
         }
 
 
@@ -75,18 +76,25 @@ class PickScanPlaceNode(Node):
 
     def add_collision_scene(self):
         # Table top
-        self.add_collision_box('table_top', 0.55, 0.0, 0.2, 0.8, 0.7, 0.02)
+        self.add_collision_box('table_top', 0.45, 0.0, 0.2, 0.5, 0.4, 0.02)
 
         # Table legs
-        self.add_collision_box('table_leg_1', 0.3, -0.25, 0.1, 0.04, 0.04, 0.2)
-        self.add_collision_box('table_leg_2', 0.7, -0.25, 0.1, 0.04, 0.04, 0.2)
-        self.add_collision_box('table_leg_3', 0.3, 0.25, 0.1, 0.04, 0.04, 0.2)
-        self.add_collision_box('table_leg_4', 0.7, 0.25, 0.1, 0.04, 0.04, 0.2)
+        self.add_collision_box('table_leg_1', 0.30, -0.15, 0.1, 0.04, 0.04, 0.2)
+        self.add_collision_box('table_leg_2', 0.60, -0.15, 0.1, 0.04, 0.04, 0.2)
+        self.add_collision_box('table_leg_3', 0.30, 0.15, 0.1, 0.04, 0.04, 0.2)
+        self.add_collision_box('table_leg_4', 0.60, 0.15, 0.1, 0.04, 0.04, 0.2)
 
         # Scanner pole/camera
         self.add_collision_box('scanner_pole', 0.3, 0.58, 0.30, 0.03, 0.03, 0.60)
         self.add_collision_box('scanner_arm', 0.3, 0.52, 0.55, 0.03, 0.14, 0.03)
         self.add_collision_box('scanner_head', 0.3, 0.45, 0.55, 0.07, 0.04, 0.07)
+
+        # Second table collision
+        self.add_collision_box('second_table_top', -0.35, -0.35, 0.2, 0.55, 0.35, 0.02)
+        self.add_collision_box('second_table_leg_1', -0.55, -0.48, 0.1, 0.04, 0.04, 0.2)
+        self.add_collision_box('second_table_leg_2', -0.15, -0.48, 0.1, 0.04, 0.04, 0.2)
+        self.add_collision_box('second_table_leg_3', -0.55, -0.22, 0.1, 0.04, 0.04, 0.2)
+        self.add_collision_box('second_table_leg_4', -0.15, -0.22, 0.1, 0.04, 0.04, 0.2)
 
         # Bin walls simplified as obstacles
         #for key, b in self.bins.items():
@@ -258,20 +266,25 @@ class PickScanPlaceNode(Node):
         L.info('Leave scan station')
         self.move(0.3, 0.3, 0.75)    # lift up
         self.move(0.3, 0.0, 0.75)    # back to center
-
+        
         # -- PLACE --
         L.info('')
         L.info(f'-- PLACE ({b["name"]}) --')
 
         bx, by, bz = b['x'], b['y'], b['z']
 
-        L.info('Go above bin')
-        if not self.move(bx, by, 0.70):
+        L.info('Move to safe height')
+        if not self.move(0.30, 0.15, 0.75):
+            L.error('Failed to move to transition point')
+            return
+
+        L.info('Go above second table bin')
+        if not self.move(bx, by, 0.75):
             L.error('Failed to reach above bin')
             return
 
         L.info('Lower close to bin')
-        if not self.move(bx, by, 0.42):
+        if not self.move(bx, by, 0.45):
             L.error('Failed to lower close to bin')
             return
 
@@ -279,13 +292,13 @@ class PickScanPlaceNode(Node):
         self.grip(False)
 
         L.info('Retreat')
-        if not self.move(bx, by, 0.70):
+        if not self.move(bx, by, 0.75):
             L.error('Failed to retreat from bin')
             return
 
         L.info('Return home')
-        self.move(0.3, 0.0, 0.70)
-        self.move(0.3, 0.0, 0.60)
+        self.move(0.30, 0.15, 0.75)
+        self.move(0.30, 0.00, 0.65)
 
         L.info('')
         L.info('====== DONE ======')
