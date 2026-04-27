@@ -145,28 +145,28 @@ class PickScanPlaceNode(Node):
             #self.add_collision_box(f'bin_{key}_back', x, y + 0.075, 0.04, 0.15, 0.008, 0.075)
 
         
-        # Bin walls simplified as obstacles (with opening on top)
+        # Bin walls simplified as obstacles (matching RViz visual bins)
         for key, b in self.bins.items():
             x = b['x']
             y = b['y']
 
-            # Base (on table)
+            # Base
             self.add_collision_box(
                 f'bin_{key}_base', x, y, 0.21, 0.15, 0.15, 0.01
             )
 
-            # Side walls (shorter so gripper can enter from above)
+            # Walls matching _bin() visual dimensions
             self.add_collision_box(
-                f'bin_{key}_left', x - 0.075, y, 0.28, 0.008, 0.15, 0.12
+                f'bin_{key}_left', x - 0.075, y, 0.25, 0.008, 0.15, 0.075
             )
             self.add_collision_box(
-                f'bin_{key}_right', x + 0.075, y, 0.28, 0.008, 0.15, 0.12
+                f'bin_{key}_right', x + 0.075, y, 0.25, 0.008, 0.15, 0.075
             )
             self.add_collision_box(
-                f'bin_{key}_front', x, y - 0.075, 0.28, 0.15, 0.008, 0.12
+                f'bin_{key}_front', x, y - 0.075, 0.25, 0.15, 0.008, 0.075
             )
             self.add_collision_box(
-                f'bin_{key}_back', x, y + 0.075, 0.28, 0.15, 0.008, 0.12
+                f'bin_{key}_back', x, y + 0.075, 0.25, 0.15, 0.008, 0.075
             )
 
 
