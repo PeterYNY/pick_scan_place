@@ -16,8 +16,19 @@ class SceneSetupNode(Node):
         self.marker_pub = self.create_publisher(
             MarkerArray, '/visualization_marker_array', 10)
 
+        self.conveyor_state_pub = self.create_publisher(
+            String, '/conveyor_state', 10)
+
         self.mid = 0
         self.markers = MarkerArray()
+
+        # Conveyor simulation
+        self.conveyor_x = 0.50
+        self.conveyor_y = -0.32
+        self.conveyor_speed = 0.01
+        self.sensor_y = 0.00
+        self.conveyor_running = True
+        self.conveyor_ready_published = False
 
         # Object state (for moving cube)
         self.object_state = 'table'
@@ -33,12 +44,48 @@ class SceneSetupNode(Node):
         time.sleep(2.0)
 
         # First Table
-        self._box(0.45, 0.0, 0.2, 0.5, 0.4, 0.02, 0.55, 0.35, 0.17)
+        #self._box(0.45, 0.0, 0.2, 0.5, 0.4, 0.02, 0.55, 0.35, 0.17)
         # Table Legs
-        self._box(0.30, -0.15, 0.1, 0.04, 0.04, 0.2, 0.45, 0.28, 0.12)
-        self._box(0.60, -0.15, 0.1, 0.04, 0.04, 0.2, 0.45, 0.28, 0.12)
-        self._box(0.30, 0.15, 0.1, 0.04, 0.04, 0.2, 0.45, 0.28, 0.12)
-        self._box(0.60, 0.15, 0.1, 0.04, 0.04, 0.2, 0.45, 0.28, 0.12)
+        #self._box(0.30, -0.15, 0.1, 0.04, 0.04, 0.2, 0.45, 0.28, 0.12)
+        #self._box(0.60, -0.15, 0.1, 0.04, 0.04, 0.2, 0.45, 0.28, 0.12)
+        #self._box(0.30, 0.15, 0.1, 0.04, 0.04, 0.2, 0.45, 0.28, 0.12)
+        #self._box(0.60, 0.15, 0.1, 0.04, 0.04, 0.2, 0.45, 0.28, 0.12)
+
+        # Conveyor system: feeder box + belt
+
+        # Large feeder box / hopper reaching the floor
+        self._box(0.50, -0.42, 0.20, 0.28, 0.22, 0.40, 0.35, 0.35, 0.35)
+        self._label('Feeder', 0.50, -0.42, 0.43, 1.0, 1.0, 0.0)
+
+        # Exit hole visual: starts from conveyor surface and goes upward
+        self._box(0.50, -0.30, 0.255, 0.12, 0.01, 0.09, 0.0, 0.0, 0.0)
+
+        # Conveyor belt surface
+        self._box(0.50, -0.12, 0.20, 0.18, 0.55, 0.02, 0.03, 0.03, 0.03)
+
+        # Low side rails: from slightly above belt down to ground
+        self._box(0.40, -0.12, 0.115, 0.02, 0.55, 0.23, 0.45, 0.45, 0.45)
+        self._box(0.60, -0.12, 0.115, 0.02, 0.55, 0.23, 0.45, 0.45, 0.45)
+
+        # End roller/supports: at both ends of conveyor, from above belt to ground
+        self._box(0.50, -0.395, 0.115, 0.20, 0.025, 0.23, 0.6, 0.6, 0.6)
+        self._box(0.50, 0.155, 0.115, 0.20, 0.025, 0.23, 0.6, 0.6, 0.6)
+
+        # Horizontal beam sensor embedded near the top of side rails
+
+        # Left sensor emitter
+        self._box(0.40, 0.00, 0.225, 0.02, 0.03, 0.03, 0.1, 0.1, 0.1)
+
+        # Right sensor receiver
+        self._box(0.60, 0.00, 0.225, 0.02, 0.03, 0.03, 0.1, 0.1, 0.1)
+
+        # Laser beam slightly above conveyor belt surface
+        self._box(0.50, 0.00, 0.225, 0.20, 0.004, 0.004, 1.0, 0.0, 0.0, 0.9)
+
+        self._label('Beam Sensor', 0.50, 0.00, 0.30, 1.0, 0.0, 0.0)
+
+
+        self._label('Conveyor Belt', 0.50, -0.12, 0.36, 1.0, 1.0, 0.0)
 
         # Second table on the opposite side of the robot
         self._box(-0.35, -0.35, 0.2, 0.55, 0.35, 0.02, 0.55, 0.35, 0.17)
@@ -79,12 +126,19 @@ class SceneSetupNode(Node):
         # Label
         self._label('QR Scanner', 0.3, 0.58, 0.65, 0.0, 0.8, 1.0)
 
-        self.timer = self.create_timer(1.0, self._pub)
+        self.timer = self.create_timer(0.1, self._pub)
         self.get_logger().info('Scene ready!')
 
     def _pub(self):
-        self.marker_pub.publish(self.markers)
+        if self.object_state == 'table':
+            self._dynamic_object_marker()
 
+            if not self.conveyor_running and self.conveyor_ready_published:
+                msg = String()
+                msg.data = 'ready'
+                self.conveyor_state_pub.publish(msg)
+
+        self.marker_pub.publish(self.markers)
 
 
     def object_state_cb(self, msg):
@@ -103,7 +157,7 @@ class SceneSetupNode(Node):
         m.pose.orientation = Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
 
         if self.object_state == 'attached':
-            m.header.frame_id = 'panda_link8'   # follows gripper
+            m.header.frame_id = 'panda_link8'
             m.pose.position = Point(x=0.0, y=0.0, z=0.08)
 
         elif self.object_state == 'bin_A':
@@ -119,8 +173,28 @@ class SceneSetupNode(Node):
             m.pose.position = Point(x=-0.50, y=-0.35, z=0.28)
 
         else:
+            # Conveyor movement along Y direction
+            if self.conveyor_running:
+                self.conveyor_y += self.conveyor_speed
+
+                # Stop at sensor
+                if self.conveyor_y >= self.sensor_y:
+                    self.conveyor_y = self.sensor_y
+                    self.conveyor_running = False
+
+                    if not self.conveyor_ready_published:
+                        msg = String()
+                        msg.data = 'ready'
+                        self.conveyor_state_pub.publish(msg)
+                        self.get_logger().info('Conveyor sensor detected object: ready')
+                        self.conveyor_ready_published = True
+
             m.header.frame_id = 'panda_link0'
-            m.pose.position = Point(x=0.50, y=0.00, z=0.25)
+            m.pose.position = Point(
+                x=float(self.conveyor_x),
+                y=float(self.conveyor_y),
+                z=0.23
+            )
 
         # Remove old marker
         self.markers.markers = [

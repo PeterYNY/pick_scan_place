@@ -30,7 +30,10 @@ class PickScanPlaceNode(Node):
             callback_group=self.cb_group)
 
         self.qr_result = None
+        self.conveyor_ready = False
+
         self.create_subscription(String, '/barcode', self.qr_cb, 10)
+        self.create_subscription(String, '/conveyor_state', self.conveyor_cb, 10)
 
         self.object_state_pub = self.create_publisher(String, '/object_state', 10)
 
@@ -53,6 +56,11 @@ class PickScanPlaceNode(Node):
 
     def qr_cb(self, msg):
         self.qr_result = msg.data
+
+    def conveyor_cb(self, msg):
+        if msg.data == 'ready':
+            self.conveyor_ready = True
+            self.get_logger().info('Conveyor ready signal received')
 
     def publish_object_state(self, state):
         msg = String()
@@ -222,6 +230,12 @@ class PickScanPlaceNode(Node):
 
         L.info('')
         L.info('====== PICK-SCAN-PLACE ======')
+
+        L.info('Waiting for conveyor sensor...')
+        while not self.conveyor_ready:
+            rclpy.spin_once(self, timeout_sec=0.2)
+
+        L.info('Conveyor stopped. Object ready for pickup.')
 
         # -- PICK --
         L.info('')
