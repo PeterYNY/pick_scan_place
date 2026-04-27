@@ -58,7 +58,7 @@ class PickScanPlaceNode(Node):
         self.qr_result = msg.data
 
     def conveyor_cb(self, msg):
-        if msg.data == 'ready':
+        if msg.data == 'ready' and not self.conveyor_ready:
             self.conveyor_ready = True
             self.get_logger().info('Conveyor ready signal received')
 
@@ -98,13 +98,29 @@ class PickScanPlaceNode(Node):
 
     def add_collision_scene(self):
         # Table top
-        self.add_collision_box('table_top', 0.45, 0.0, 0.2, 0.5, 0.4, 0.02)
+        #self.add_collision_box('table_top', 0.45, 0.0, 0.2, 0.5, 0.4, 0.02)
 
         # Table legs
-        self.add_collision_box('table_leg_1', 0.30, -0.15, 0.1, 0.04, 0.04, 0.2)
-        self.add_collision_box('table_leg_2', 0.60, -0.15, 0.1, 0.04, 0.04, 0.2)
-        self.add_collision_box('table_leg_3', 0.30, 0.15, 0.1, 0.04, 0.04, 0.2)
-        self.add_collision_box('table_leg_4', 0.60, 0.15, 0.1, 0.04, 0.04, 0.2)
+        #self.add_collision_box('table_leg_1', 0.30, -0.15, 0.1, 0.04, 0.04, 0.2)
+        #self.add_collision_box('table_leg_2', 0.60, -0.15, 0.1, 0.04, 0.04, 0.2)
+        #self.add_collision_box('table_leg_3', 0.30, 0.15, 0.1, 0.04, 0.04, 0.2)
+        #self.add_collision_box('table_leg_4', 0.60, 0.15, 0.1, 0.04, 0.04, 0.2)
+
+        # Conveyor collision objects
+        # Feeder box / hopper
+        self.add_collision_box('conveyor_feeder', 0.50, -0.42, 0.20, 0.28, 0.22, 0.40)
+        # Conveyor belt surface
+        self.add_collision_box('conveyor_belt', 0.50, -0.12, 0.20, 0.18, 0.55, 0.02)
+        # Conveyor side rails
+        self.add_collision_box('conveyor_left_rail', 0.40, -0.12, 0.115, 0.02, 0.55, 0.23)
+        self.add_collision_box('conveyor_right_rail', 0.60, -0.12, 0.115, 0.02, 0.55, 0.23)
+        # End roller/supports
+        self.add_collision_box('conveyor_front_support', 0.50, -0.395, 0.115, 0.20, 0.025, 0.23)
+        self.add_collision_box('conveyor_back_support', 0.50, 0.155, 0.115, 0.20, 0.025, 0.23)
+        # Sensor emitter and receiver only
+        # laser beam has no collision
+        self.add_collision_box('beam_sensor_left', 0.40, 0.00, 0.225, 0.02, 0.03, 0.03)
+        self.add_collision_box('beam_sensor_right', 0.60, 0.00, 0.225, 0.02, 0.03, 0.03)
 
         # Scanner pole/camera
         self.add_collision_box('scanner_pole', 0.3, 0.58, 0.30, 0.03, 0.03, 0.60)
@@ -335,6 +351,7 @@ class PickScanPlaceNode(Node):
         L.info('====== DONE ======')
         L.info(f'Object in {b["name"]}')
         L.info('==================')
+        rclpy.shutdown()
 
 
 def main(args=None):
