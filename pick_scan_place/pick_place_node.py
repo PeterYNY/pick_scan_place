@@ -263,8 +263,8 @@ class PickScanPlaceNode(Node):
 
         L.info('Go above object')
         self.move(0.4, 0.0, 0.55)    # safe transition
-        self.move(0.5, 0.0, 0.50)    # above cube
-        self.move(0.5, 0.0, 0.42)    # close to cube
+        self.move(0.5, 0.0, 0.35)    # above cube
+        self.move(0.5, 0.0, 0.28)    # close to cube level
 
         L.info('Grab object')
         self.grip(True)
