@@ -286,11 +286,13 @@ class PickScanPlaceNode(Node):
         self.move(0.3, 0.3, 0.66)   # at scan station (aligned with scanner)
 
         L.info('Scanning QR...')
-        # self.qr_result = None  # DO NOT reset - keep received QR
+        # Pause before scanning
+        L.info('Scanning QR in 2 seconds...')
+        time.sleep(2.0)
+
         t0 = time.time()
-        while self.qr_result is None and (time.time() - t0) < 8.0:
-            rclpy.spin_once(self, timeout_sec=0.5)
-            L.info(f'  waiting... ({time.time()-t0:.0f}s)')
+        while self.qr_result is None and (time.time() - t0) < 2.0:
+            rclpy.spin_once(self, timeout_sec=0.2)
 
         qr = self.qr_result
         if qr:
@@ -329,13 +331,14 @@ class PickScanPlaceNode(Node):
             L.error('Failed to reach above bin')
             return
 
-        L.info('Lower close to bin')
-        if not self.move(bx, by, 0.45):
-            L.error('Failed to lower close to bin')
+        L.info('Lower into bin')
+        if not self.move(bx, by, 0.35):
+            L.error('Failed to lower into bin')
             return
 
         L.info('Release object inside bin')
         self.grip(False)
+        time.sleep(0.5)
         self.publish_object_state(f'bin_{key}')
 
         L.info('Retreat')

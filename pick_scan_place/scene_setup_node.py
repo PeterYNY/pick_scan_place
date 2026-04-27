@@ -162,15 +162,15 @@ class SceneSetupNode(Node):
 
         elif self.object_state == 'bin_A':
             m.header.frame_id = 'panda_link0'
-            m.pose.position = Point(x=-0.20, y=-0.35, z=0.28)
+            m.pose.position = Point(x=-0.20, y=-0.35, z=0.23)
 
         elif self.object_state == 'bin_B':
             m.header.frame_id = 'panda_link0'
-            m.pose.position = Point(x=-0.35, y=-0.35, z=0.28)
+            m.pose.position = Point(x=-0.35, y=-0.35, z=0.23)
 
         elif self.object_state == 'bin_C':
             m.header.frame_id = 'panda_link0'
-            m.pose.position = Point(x=-0.50, y=-0.35, z=0.28)
+            m.pose.position = Point(x=-0.50, y=-0.35, z=0.23)
 
         else:
             # Conveyor movement along Y direction
