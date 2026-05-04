@@ -97,14 +97,6 @@ class PickScanPlaceNode(Node):
         self.get_logger().info(f'Added collision object: {name}')
 
     def add_collision_scene(self):
-        # Table top
-        #self.add_collision_box('table_top', 0.45, 0.0, 0.2, 0.5, 0.4, 0.02)
-
-        # Table legs
-        #self.add_collision_box('table_leg_1', 0.30, -0.15, 0.1, 0.04, 0.04, 0.2)
-        #self.add_collision_box('table_leg_2', 0.60, -0.15, 0.1, 0.04, 0.04, 0.2)
-        #self.add_collision_box('table_leg_3', 0.30, 0.15, 0.1, 0.04, 0.04, 0.2)
-        #self.add_collision_box('table_leg_4', 0.60, 0.15, 0.1, 0.04, 0.04, 0.2)
 
         # Conveyor collision objects
         # Feeder box / hopper
@@ -133,16 +125,6 @@ class PickScanPlaceNode(Node):
         self.add_collision_box('second_table_leg_2', -0.15, -0.48, 0.1, 0.04, 0.04, 0.2)
         self.add_collision_box('second_table_leg_3', -0.55, -0.22, 0.1, 0.04, 0.04, 0.2)
         self.add_collision_box('second_table_leg_4', -0.15, -0.22, 0.1, 0.04, 0.04, 0.2)
-
-        # Bin walls simplified as obstacles
-        #for key, b in self.bins.items():
-            #x = b['x']
-            #y = b['y']
-            #self.add_collision_box(f'bin_{key}_base', x, y, 0.005, 0.15, 0.15, 0.01)
-            #self.add_collision_box(f'bin_{key}_left', x - 0.075, y, 0.04, 0.008, 0.15, 0.075)
-            #self.add_collision_box(f'bin_{key}_right', x + 0.075, y, 0.04, 0.008, 0.15, 0.075)
-            #self.add_collision_box(f'bin_{key}_front', x, y - 0.075, 0.04, 0.15, 0.008, 0.075)
-            #self.add_collision_box(f'bin_{key}_back', x, y + 0.075, 0.04, 0.15, 0.008, 0.075)
 
         
         # Bin walls simplified as obstacles (matching RViz visual bins)
