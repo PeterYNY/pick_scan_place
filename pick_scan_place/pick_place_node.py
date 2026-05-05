@@ -38,7 +38,7 @@ class PickScanPlaceNode(Node):
         self.object_state_pub = self.create_publisher(String, '/object_state', 10)
 
         self.collision_pub = self.create_publisher(
-            CollisionObject, '/collision_object', 10)
+            CollisionObject, '/collision_object', 100)
         
         
         self.bins = {
@@ -77,6 +77,7 @@ class PickScanPlaceNode(Node):
     def add_collision_box(self, name, x, y, z, sx, sy, sz):
         obj = CollisionObject()
         obj.header.frame_id = 'panda_link0'
+        obj.header.stamp = self.get_clock().now().to_msg()
         obj.id = name
 
         box = SolidPrimitive()
@@ -94,6 +95,7 @@ class PickScanPlaceNode(Node):
         obj.operation = CollisionObject.ADD
 
         self.collision_pub.publish(obj)
+        time.sleep(0.05)
         self.get_logger().info(f'Added collision object: {name}')
 
     def add_collision_scene(self):
@@ -156,7 +158,7 @@ class PickScanPlaceNode(Node):
         req = MotionPlanRequest()
         req.group_name = 'panda_arm'
         req.num_planning_attempts = 10
-        req.allowed_planning_time = 5.0
+        req.allowed_planning_time = 10.0
 
         pos = PositionConstraint()
         pos.header.frame_id = 'panda_link0'
@@ -177,9 +179,9 @@ class PickScanPlaceNode(Node):
         ori.header.frame_id = 'panda_link0'
         ori.link_name = 'panda_link8'
         ori.orientation = Quaternion(x=0.9238795, y=-0.3826834, z=0.0, w=0.0)
-        ori.absolute_x_axis_tolerance = 0.1
-        ori.absolute_y_axis_tolerance = 0.1
-        ori.absolute_z_axis_tolerance = 0.1
+        ori.absolute_x_axis_tolerance = 0.5
+        ori.absolute_y_axis_tolerance = 0.5
+        ori.absolute_z_axis_tolerance = 3.14
         ori.weight = 1.0
 
         c = Constraints()
@@ -244,9 +246,17 @@ class PickScanPlaceNode(Node):
         self.grip(False)
 
         L.info('Go above object')
-        self.move(0.4, 0.0, 0.55)    # safe transition
-        self.move(0.5, 0.0, 0.35)    # above cube
-        self.move(0.5, 0.0, 0.28)    # close to cube level
+        if not self.move(0.4, 0.0, 0.55):
+            L.error('Failed to reach safe transition before pickup')
+            return
+
+        if not self.move(0.5, 0.0, 0.38):
+            L.error('Failed to reach above object')
+            return
+
+        if not self.move(0.5, 0.0, 0.34):
+            L.error('Failed to reach pickup height')
+            return
 
         L.info('Grab object')
         self.grip(True)
@@ -308,13 +318,13 @@ class PickScanPlaceNode(Node):
             L.error('Failed to move to transition point')
             return
 
-        L.info('Go above second table bin')
+        L.info('Go above table bin')
         if not self.move(bx, by, 0.75):
             L.error('Failed to reach above bin')
             return
 
         L.info('Lower into bin')
-        if not self.move(bx, by, 0.35):
+        if not self.move(bx, by, 0.42):
             L.error('Failed to lower into bin')
             return
 

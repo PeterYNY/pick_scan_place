@@ -150,8 +150,8 @@ class SceneSetupNode(Node):
         m.pose.orientation = Quaternion(x=0.0, y=0.0, z=0.0, w=1.0)
 
         if self.object_state == 'attached':
-            m.header.frame_id = 'panda_link8'
-            m.pose.position = Point(x=0.0, y=0.0, z=0.08)
+            m.header.frame_id = 'panda_hand'
+            m.pose.position = Point(x=0.0, y=0.0, z=0.10)
 
         elif self.object_state == 'bin_A':
             m.header.frame_id = 'panda_link0'
