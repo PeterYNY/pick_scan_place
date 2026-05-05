@@ -9,6 +9,7 @@ from moveit_msgs.action import MoveGroup
 from moveit_msgs.msg import (
     MotionPlanRequest, PlanningOptions, Constraints,
     PositionConstraint, OrientationConstraint, BoundingVolume,
+    CollisionObject,
 )
 from control_msgs.action import GripperCommand
 from geometry_msgs.msg import Point, Quaternion, Pose
@@ -29,13 +30,23 @@ class PickScanPlaceNode(Node):
             callback_group=self.cb_group)
 
         self.qr_result = None
-        self.create_subscription(String, '/barcode', self.qr_cb, 10)
+        self.conveyor_ready = False
 
+        self.create_subscription(String, '/barcode', self.qr_cb, 10)
+        self.create_subscription(String, '/conveyor_state', self.conveyor_cb, 10)
+
+        self.object_state_pub = self.create_publisher(String, '/object_state', 10)
+
+        self.collision_pub = self.create_publisher(
+            CollisionObject, '/collision_object', 100)
+        
+        
         self.bins = {
-            'A': {'x': 0.5, 'y': -0.4, 'z': 0.15, 'name': 'Bin A (Red)'},
-            'B': {'x': 0.3, 'y': -0.4, 'z': 0.15, 'name': 'Bin B (Blue)'},
-            'C': {'x': 0.1, 'y': -0.4, 'z': 0.15, 'name': 'Bin C (Green)'},
+            'A': {'x': -0.20, 'y': -0.35, 'z': 0.32, 'name': 'Bin A (Red)'},
+            'B': {'x': -0.35, 'y': -0.35, 'z': 0.32, 'name': 'Bin B (Blue)'},
+            'C': {'x': -0.50, 'y': -0.35, 'z': 0.32, 'name': 'Bin C (Green)'},
         }
+
 
         self.get_logger().info('Waiting for servers...')
         self.move_client.wait_for_server()
@@ -46,11 +57,108 @@ class PickScanPlaceNode(Node):
     def qr_cb(self, msg):
         self.qr_result = msg.data
 
+    def conveyor_cb(self, msg):
+        if msg.data == 'ready' and not self.conveyor_ready:
+            self.conveyor_ready = True
+            self.get_logger().info('Conveyor ready signal received')
+
+    def publish_object_state(self, state):
+        msg = String()
+        msg.data = state
+        self.object_state_pub.publish(msg)
+        self.get_logger().info(f'Object state: {state}')
+
+    def publish_object_state(self, state):
+        msg = String()
+        msg.data = state
+        self.object_state_pub.publish(msg)
+        self.get_logger().info(f'Object state: {state}')
+
+    def add_collision_box(self, name, x, y, z, sx, sy, sz):
+        obj = CollisionObject()
+        obj.header.frame_id = 'panda_link0'
+        obj.header.stamp = self.get_clock().now().to_msg()
+        obj.id = name
+
+        box = SolidPrimitive()
+        box.type = SolidPrimitive.BOX
+        box.dimensions = [float(sx), float(sy), float(sz)]
+
+        pose = Pose()
+        pose.position.x = float(x)
+        pose.position.y = float(y)
+        pose.position.z = float(z)
+        pose.orientation.w = 1.0
+
+        obj.primitives.append(box)
+        obj.primitive_poses.append(pose)
+        obj.operation = CollisionObject.ADD
+
+        self.collision_pub.publish(obj)
+        time.sleep(0.05)
+        self.get_logger().info(f'Added collision object: {name}')
+
+    def add_collision_scene(self):
+
+        # Conveyor collision objects
+        # Feeder box / hopper
+        self.add_collision_box('conveyor_feeder', 0.50, -0.42, 0.20, 0.28, 0.22, 0.40)
+        # Conveyor belt surface
+        self.add_collision_box('conveyor_belt', 0.50, -0.12, 0.20, 0.18, 0.55, 0.02)
+        # Conveyor side rails
+        self.add_collision_box('conveyor_left_rail', 0.40, -0.12, 0.115, 0.02, 0.55, 0.23)
+        self.add_collision_box('conveyor_right_rail', 0.60, -0.12, 0.115, 0.02, 0.55, 0.23)
+        # End roller/supports
+        self.add_collision_box('conveyor_front_support', 0.50, -0.395, 0.115, 0.20, 0.025, 0.23)
+        self.add_collision_box('conveyor_back_support', 0.50, 0.155, 0.115, 0.20, 0.025, 0.23)
+        # Sensor emitter and receiver only
+        # laser beam has no collision
+        self.add_collision_box('beam_sensor_left', 0.40, 0.00, 0.225, 0.02, 0.03, 0.03)
+        self.add_collision_box('beam_sensor_right', 0.60, 0.00, 0.225, 0.02, 0.03, 0.03)
+
+        # Scanner pole/camera
+        self.add_collision_box('scanner_pole', 0.3, 0.58, 0.30, 0.03, 0.03, 0.60)
+        self.add_collision_box('scanner_arm', 0.3, 0.52, 0.55, 0.03, 0.14, 0.03)
+        self.add_collision_box('scanner_head', 0.3, 0.45, 0.55, 0.07, 0.04, 0.07)
+
+        # Second table collision
+        self.add_collision_box('second_table_top', -0.35, -0.35, 0.2, 0.55, 0.35, 0.02)
+        self.add_collision_box('second_table_leg_1', -0.55, -0.48, 0.1, 0.04, 0.04, 0.2)
+        self.add_collision_box('second_table_leg_2', -0.15, -0.48, 0.1, 0.04, 0.04, 0.2)
+        self.add_collision_box('second_table_leg_3', -0.55, -0.22, 0.1, 0.04, 0.04, 0.2)
+        self.add_collision_box('second_table_leg_4', -0.15, -0.22, 0.1, 0.04, 0.04, 0.2)
+
+        
+        # Bin walls simplified as obstacles (matching RViz visual bins)
+        for key, b in self.bins.items():
+            x = b['x']
+            y = b['y']
+
+            # Base
+            self.add_collision_box(
+                f'bin_{key}_base', x, y, 0.21, 0.15, 0.15, 0.01
+            )
+
+            # Walls matching _bin() visual dimensions
+            self.add_collision_box(
+                f'bin_{key}_left', x - 0.075, y, 0.25, 0.008, 0.15, 0.075
+            )
+            self.add_collision_box(
+                f'bin_{key}_right', x + 0.075, y, 0.25, 0.008, 0.15, 0.075
+            )
+            self.add_collision_box(
+                f'bin_{key}_front', x, y - 0.075, 0.25, 0.15, 0.008, 0.075
+            )
+            self.add_collision_box(
+                f'bin_{key}_back', x, y + 0.075, 0.25, 0.15, 0.008, 0.075
+            )
+
+
     def move(self, x, y, z):
         req = MotionPlanRequest()
         req.group_name = 'panda_arm'
         req.num_planning_attempts = 10
-        req.allowed_planning_time = 5.0
+        req.allowed_planning_time = 10.0
 
         pos = PositionConstraint()
         pos.header.frame_id = 'panda_link0'
@@ -71,9 +179,9 @@ class PickScanPlaceNode(Node):
         ori.header.frame_id = 'panda_link0'
         ori.link_name = 'panda_link8'
         ori.orientation = Quaternion(x=0.9238795, y=-0.3826834, z=0.0, w=0.0)
-        ori.absolute_x_axis_tolerance = 0.1
-        ori.absolute_y_axis_tolerance = 0.1
-        ori.absolute_z_axis_tolerance = 0.1
+        ori.absolute_x_axis_tolerance = 0.5
+        ori.absolute_y_axis_tolerance = 0.5
+        ori.absolute_z_axis_tolerance = 3.14
         ori.weight = 1.0
 
         c = Constraints()
@@ -116,29 +224,48 @@ class PickScanPlaceNode(Node):
             return
         self._done = True
         L = self.get_logger()
+        L.info('Adding MoveIt collision scene...')
+        self.add_collision_scene()
+        time.sleep(1.0)
 
         L.info('')
         L.info('====== PICK-SCAN-PLACE ======')
+
+        L.info('Waiting for conveyor sensor...')
+        while not self.conveyor_ready:
+            rclpy.spin_once(self, timeout_sec=0.2)
+
+        L.info('Conveyor stopped. Object ready for pickup.')
 
         # -- PICK --
         L.info('')
         L.info('-- PICK --')
 
         L.info('Open gripper')
+        self.publish_object_state('table')
         self.grip(False)
 
-        # Start high, go above object, go down, grab, go back up
         L.info('Go above object')
-        self.move(0.4, 0.0, 0.5)    # safe height
-        self.move(0.5, 0.0, 0.4)    # above object
-        self.move(0.5, 0.0, 0.30)   # at object (above table z=0.2)
+        if not self.move(0.4, 0.0, 0.55):
+            L.error('Failed to reach safe transition before pickup')
+            return
+
+        if not self.move(0.5, 0.0, 0.38):
+            L.error('Failed to reach above object')
+            return
+
+        if not self.move(0.5, 0.0, 0.34):
+            L.error('Failed to reach pickup height')
+            return
 
         L.info('Grab object')
         self.grip(True)
+        time.sleep(0.5)
+        self.publish_object_state('attached')
 
         L.info('Lift up')
-        self.move(0.5, 0.0, 0.4)    # lift
-        self.move(0.5, 0.0, 0.5)    # safe height
+        self.move(0.5, 0.0, 0.50)    # lift cube with claw
+        self.move(0.5, 0.0, 0.60)    # safe height
 
         # -- SCAN --
         L.info('')
@@ -151,11 +278,13 @@ class PickScanPlaceNode(Node):
         self.move(0.3, 0.3, 0.66)   # at scan station (aligned with scanner)
 
         L.info('Scanning QR...')
-        # self.qr_result = None  # DO NOT reset - keep received QR
+        # Pause before scanning
+        L.info('Scanning QR in 2 seconds...')
+        time.sleep(2.0)
+
         t0 = time.time()
-        while self.qr_result is None and (time.time() - t0) < 8.0:
-            rclpy.spin_once(self, timeout_sec=0.5)
-            L.info(f'  waiting... ({time.time()-t0:.0f}s)')
+        while self.qr_result is None and (time.time() - t0) < 2.0:
+            rclpy.spin_once(self, timeout_sec=0.2)
 
         qr = self.qr_result
         if qr:
@@ -175,36 +304,49 @@ class PickScanPlaceNode(Node):
 
         # Lift from scan
         L.info('Leave scan station')
-        self.move(0.3, 0.3, 0.5)    # lift up
-        self.move(0.3, 0.0, 0.5)    # back to center
-
+        self.move(0.3, 0.3, 0.75)    # lift up
+        self.move(0.3, 0.0, 0.75)    # back to center
+        
         # -- PLACE --
         L.info('')
         L.info(f'-- PLACE ({b["name"]}) --')
 
         bx, by, bz = b['x'], b['y'], b['z']
 
-        L.info('Go above bin')
-        self.move(bx, 0.0, 0.5)     # transition above
-        self.move(bx, by, 0.5)      # above bin
-        self.move(bx, by, 0.35)     # lower toward bin
-        self.move(bx, by, bz)       # in bin
+        L.info('Move to safe height')
+        if not self.move(0.30, 0.15, 0.75):
+            L.error('Failed to move to transition point')
+            return
 
-        L.info('Release object')
+        L.info('Go above table bin')
+        if not self.move(bx, by, 0.75):
+            L.error('Failed to reach above bin')
+            return
+
+        L.info('Lower into bin')
+        if not self.move(bx, by, 0.42):
+            L.error('Failed to lower into bin')
+            return
+
+        L.info('Release object inside bin')
         self.grip(False)
+        time.sleep(0.5)
+        self.publish_object_state(f'bin_{key}')
 
         L.info('Retreat')
-        self.move(bx, by, 0.35)     # up from bin
-        self.move(bx, by, 0.5)      # safe height
+        if not self.move(bx, by, 0.75):
+            L.error('Failed to retreat from bin')
+            return
 
         L.info('Return home')
-        self.move(0.3, 0.0, 0.5)
-        self.move(0.3, 0.0, 0.6)
+        self.move(0.30, 0.15, 0.75)
+        self.move(0.30, 0.00, 0.65)
 
         L.info('')
         L.info('====== DONE ======')
         L.info(f'Object in {b["name"]}')
         L.info('==================')
+        rclpy.shutdown()
 
 
 def main(args=None):

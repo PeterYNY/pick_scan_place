@@ -15,9 +15,18 @@ def generate_launch_description():
         'qr_data', default_value='category_a',
         description='QR code content: category_a, category_b, or category_c')
 
+    rviz_config = os.path.join(
+        get_package_share_directory('pick_scan_place'),
+        'rviz',
+        'pick_scan_place.rviz'
+    )
+
     moveit = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(pkg_panda, 'launch', 'demo.launch.py')),
+        launch_arguments={
+            'launch_rviz': 'false'
+        }.items()
     )
 
     scene = TimerAction(period=5.0, actions=[
